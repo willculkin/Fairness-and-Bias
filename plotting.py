@@ -17,7 +17,7 @@ dictS = {"A": [0, "it's eleven oclock"],
          "K": [10, "the surface is slick"],
          "L": [11,"we'll stop in a couple of minutes"]}
 
-def plot_features(df, feature_list, save_image=False, include_IEO=False):
+def plot_features(df, feature_list, plot_diffs=False, save_image=False, include_IEO=False):
     
     num_features = len(feature_list)
     
@@ -34,19 +34,35 @@ def plot_features(df, feature_list, save_image=False, include_IEO=False):
     
     offset = -width/2*(num_features-1)
     for i, feature in enumerate(feature_list):
-        rect = ax.bar(x + offset, list(df[feature]), width, label=feature_list[i])
-        offset += width
+    	if plot_diffs == True:
+    		rect = ax.bar(x + offset, list(df['all'] - df[feature]), width, label=feature_list[i])
+    	else:
+    		rect = ax.bar(x + offset, list(df[feature]), width, label=feature_list[i])
+    	offset += width
 
-    ax.set_ylim(0,1)
-    ax.set_ylabel('WER')
-    ax.set_title('WER By Feature')
+
+    if plot_diffs == True:
+    	ax.set_ylim(-.1,.1)
+    	ax.set_ylabel('WER Difference from Sentence Average')
+    	ax.set_title('Group WER Difference from Sentence Average')
+    else:
+    	ax.set_ylim(0,.6)
+    	ax.set_ylabel('WER')
+    	ax.set_title('WER By Feature')
+
+    
+    ax.set_xlabel('Sentence')
+    
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend()
     
     if save_image == True:
+    	if plot_diffs == True:
+    		feature_list.append('diffs')
     	if include_IEO == True:
-    		feature_list = feature_list.append('IEO')
+    		feature_list.append('IEO')
+    	print(feature_list)
     	plt.savefig('_'.join(feature_list)+'.png')
     plt.show()
 
@@ -57,5 +73,7 @@ if __name__ == "__main__":
 	df_noIEO.head(15)
 
 	# Example plots
-	plot_features(df_noIEO, ['Male', 'Female'])
-	plot_features(df_noIEO, ['Caucasian', 'African American', 'Asian'])
+	plot_features(df_noIEO, ['Male', 'Female'], plot_diffs=True, save_image=True)
+	plot_features(df_noIEO, ['Caucasian', 'African American', 'Asian'], plot_diffs=True, save_image=True)
+	plot_features(df_noIEO, ['Male', 'Female'], save_image=True)
+	plot_features(df_noIEO, ['Caucasian', 'African American', 'Asian'], save_image=True)
