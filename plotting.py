@@ -4,6 +4,8 @@ import numpy as np
 import pickle
 pd.set_option('display.max_columns', None)
 
+sentenceCodes = ['IEO','TIE','IOM','IWW','TAI','MTI','IWL','ITH','DFA','ITS','TSI','WSI']
+
 dictS = {"A": [0, "it's eleven oclock"],
 		 "B": [1,"that is exactly what happened"],
          "C": [2,"i'm on my way to the meeting"],
@@ -66,14 +68,47 @@ def plot_features(df, feature_list, plot_diffs=False, save_image=False, include_
     	plt.savefig('_'.join(feature_list)+'.png')
     plt.show()
 
+def plot_cdf(df, feature, sentence_list=[], save_image=False):
+    
+    if len(sentence_list) == 0:
+        df_test = df
+    else:
+        df_test = df.loc[df['Sentence'].isin(sentence_list)]
+        
+    Data = []
+    groups = pd.unique(df_test[feature])
+    
+    for group in groups:
+        Data.append(list(df_test.loc[df[feature]==group]['WER']))
+
+    fig, ax = plt.subplots(figsize=(15, 6))    
+    
+    for i, data in enumerate(Data):
+        p = 1. * np.arange(len(data)) / (len(data) - 1)
+        ax.plot(p, -np.sort(-np.array(data)), label=groups[i])
+
+    ax.set_ylabel('WER')
+    ax.set_xlabel('Proportion')
+    ax.set_title('{0} CDF: {1}'.format(feature, ", ".join(sentence_list)))
+    ax.legend()
+    
+    if save_image == True:
+        plt.savefig('Distribution_{0}.png'.format(feature))
+    plt.show()
+
 if __name__ == "__main__":
 
-	df = pd.read_pickle('group_sentence_data.pkl')
-	df_noIEO = df.drop(0)
-	df_noIEO.head(15)
+	dfAgg = pd.read_pickle('group_sentence_data.pkl')
+	dfAgg_noIEO = dfAgg.drop(0)
+	dfAgg_noIEO.head(15)
+
+	df = pd.read_pickle('crema-processed-dataset-with-WER-PER.pkl')
+	wers = list(df['WER'])
+	wers = [float(wer[:-1])*.01 for wer in wers]
+	df['WER'] = wers
 
 	# Example plots
-	plot_features(df_noIEO, ['Male', 'Female'], plot_diffs=True, save_image=True)
-	plot_features(df_noIEO, ['Caucasian', 'African American', 'Asian'], plot_diffs=True, save_image=True)
-	plot_features(df_noIEO, ['Male', 'Female'], save_image=True)
-	plot_features(df_noIEO, ['Caucasian', 'African American', 'Asian'], save_image=True)
+	plot_features(dfAgg_noIEO, ['Male', 'Female'], plot_diffs=False)
+	plot_features(dfAgg_noIEO, ['Caucasian', 'African American', 'Asian'], plot_diffs=True)
+
+	plot_cdf(df, "Emotion", sentence_list = sentenceCodes[1:])
