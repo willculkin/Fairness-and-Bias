@@ -60,31 +60,28 @@ def getPhonemes(sentence, convertList=True):
 
 
 if __name__ == "__main__":
-	data = pd.read_pickle('crema-processed-dataset-with-WER.p')
+    data = pd.read_pickle('crema-processed-dataset-with-WER.p')
 
-	data.drop("Unnamed: 0", axis=1,inplace=True)
+    data.drop("Unnamed: 0", axis=1,inplace=True)
+    preds = data['S2T-Transcript'].to_list()
+    preds = [pred.strip(' ".').replace('11', 'eleven').replace('\\','').lower() for pred in preds]
+    data['S2T-Transcript'] = preds
 
-	data.rename(columns={"S2T-Transcript":"S2T_Transcript","S2T-Confidence":"S2T_Confidence"},inplace=True)
+    data = data.loc[data['S2T-Transcript'] != 'n/a']
 
-	preds = data['S2T_Transcript'].to_list()
-	preds = [pred.strip(' "').lower().replace('11', 'eleven').replace('\\','') for pred in preds]
-	data['S2T_Transcript'] = preds
+    Yp = data['S2T-Transcript'].to_list()
+    Yt = data['Sentence'].to_list()
 
-	data = data[data.S2T_Transcript != 'n/a']
-	data.head()
+    PER = []
+    for yp, yt in zip(Yp, Yt):
+        ps = getPhonemes(yp)
+        if ps == "":
+            print(yp)
+            PER.append(-1)
+        else:
+            PER.append(wer(dictP[yt], ps))
 
-	Yp = data['S2T_Transcript'].to_list()
-	Yt = data['Sentence'].to_list()
+    data["PER"] = PER
+    data.head()
 
-	PER = []
-	for yp, yt in zip(Yp, Yt):
-	    per = wer(dictP[yt], getPhonemes(yp))
-	    if per == "":
-	        PER.append(-1)
-	    else:
-	        PER.append(per)
-
-	data["PER"] = PER
-	data.head()
-
-	data.to_pickle('crema-processed-dataset-with-WER-PER.pkl')
+    data.to_pickle('crema-processed-dataset-with-WER-PER.pkl')

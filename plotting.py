@@ -29,7 +29,6 @@ def plot_features(df, feature_list, plot_diffs=False, save_image=False, include_
     	labels = labels[1:]
     
     x = np.arange(len(labels))  # the label locations
-    width = .05 * num_features
     
     fig, ax = plt.subplots(figsize=(5*num_features,6))
     width = .7/num_features
@@ -58,13 +57,13 @@ def plot_features(df, feature_list, plot_diffs=False, save_image=False, include_
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend()
+    ax.grid()
     
     if save_image == True:
     	if plot_diffs == True:
     		feature_list.append('diffs')
     	if include_IEO == True:
     		feature_list.append('IEO')
-    	print(feature_list)
     	plt.savefig('_'.join(feature_list)+'.png')
     plt.show()
 
@@ -81,15 +80,16 @@ def plot_cdf(df, feature, sentence_list=[], save_image=False):
     for group in groups:
         Data.append(list(df_test.loc[df[feature]==group]['WER']))
 
-    fig, ax = plt.subplots(figsize=(15, 6))    
+    fig, ax = plt.subplots(figsize=(14, 8))    
     
     for i, data in enumerate(Data):
         p = 1. * np.arange(len(data)) / (len(data) - 1)
-        ax.plot(p, -np.sort(-np.array(data)), label=groups[i])
+        ax.plot(-np.sort(-np.array(data)), p, label=groups[i])
 
-    ax.set_ylabel('WER')
-    ax.set_xlabel('Proportion')
+    ax.set_ylabel('Proportion of Samples')
+    ax.set_xlabel('WER')
     ax.set_title('{0} CDF: {1}'.format(feature, ", ".join(sentence_list)))
+    ax.grid()
     ax.legend()
     
     if save_image == True:
@@ -107,8 +107,13 @@ if __name__ == "__main__":
 	wers = [float(wer[:-1])*.01 for wer in wers]
 	df['WER'] = wers
 
-	# Example plots
-	plot_features(dfAgg_noIEO, ['Male', 'Female'], plot_diffs=False)
-	plot_features(dfAgg_noIEO, ['Caucasian', 'African American', 'Asian'], plot_diffs=True)
+	### Plots used in presentation ###
 
-	plot_cdf(df, "Emotion", sentence_list = sentenceCodes[1:])
+	plot_features(dfAgg, ['Male', 'Female'], plot_diffs=False, include_IEO=True, save_image=True)
+	plot_features(dfAgg, ['Caucasian', 'African American', 'Asian'], plot_diffs=False, include_IEO=True, save_image=True)
+
+	plot_features(dfAgg, ['NEU', 'HAP', 'SAD', 'ANG', 'FEA', 'DIS'], include_IEO=True, save_image=True)
+
+	plot_cdf(df, "Emotion", sentence_list = sentenceCodes[1:], save_image=True)
+	plot_cdf(df, "Race", sentence_list = sentenceCodes[1:], save_image=True)
+	plot_cdf(df, "Sex", sentence_list = sentenceCodes[1:], save_image=True)
