@@ -22,14 +22,14 @@ def extract_features(df):
         'sex': {},
         'race': {},
         #'ethnicity': {},
-        #'emotion': {},
+        'emotion': {},
     }
 
     feature_options = {
         'sex': [None],
         'race': [None],
         #'ethnicity': [None],
-        #'emotion': [None],
+        'emotion': [None],
     }
 
     for sex in df['Sex']:
@@ -53,14 +53,14 @@ def extract_features(df):
         else:
             feature_counts['ethnicity'][ethnicity] = 1
             feature_options['ethnicity'].append(ethnicity)
-
+    '''
     for emotion in df['Emotion']:
         if emotion in feature_counts['emotion']:
             feature_counts['emotion'][emotion] += 1
         else:
             feature_counts['emotion'][emotion] = 1
             feature_options['emotion'].append(emotion)
-    '''
+
 
     return feature_counts, feature_options
 
@@ -69,9 +69,11 @@ def extract_sentences(df):
 
     for sentence in df['Sentence']:
         if sentence not in sentences:
-            sentences[sentence] = True
+            sentences[sentence] = 1
+        else:
+            sentences[sentence] += 1
 
-    return list(sentences.keys())
+    return sentences #list(sentences.keys())
 
 def convert_option_to_col(option):
     option = list(option.values())
@@ -88,7 +90,7 @@ def convert_option_to_col(option):
 
 def generate_group_by_sentence_df(df, sentences, feature_options):
     gbs_df = pd.DataFrame()
-    gbs_df['Sentence'] = sentences
+    gbs_df['Sentence'] = list(sentences.keys())
 
     parameter_grid = ps.pgrid(ps.plist(p_name, feature_options[p_name])
                                   for p_name in feature_options)
@@ -135,6 +137,23 @@ def generate_group_by_sentence_df(df, sentences, feature_options):
     for col_name in group_wers:
         gbs_df[col_name] = group_wers[col_name]
 
+    new_row = {'Sentence': 'ALL'}
+    for col_name in group_wers:
+        counts = np.array(list(sentences.values()))
+        vals = np.array(gbs_df[col_name])
+
+        cuml_avg = np.dot(vals, counts) / counts.sum()
+        new_row[col_name] = cuml_avg
+
+
+
+    #print(gbs_df.head(1))
+    #raise Exception('ok')
+
+    #new_row = ['ALL'] + new_row
+    gbs_df = gbs_df.append(new_row, ignore_index=True)
+
+    print(gbs_df.tail(5))
     return gbs_df
 
 def generate_dsitribution_df(df):
@@ -148,5 +167,5 @@ feature_counts, feature_options = extract_features(og_df)
 sentences = extract_sentences(og_df)
 
 gbs_df = generate_group_by_sentence_df(og_df, sentences, feature_options)
-gbs_df.to_pickle('./group_sentence_data.pkl')
+gbs_df.to_pickle('./group-sentence-data-2.pkl')
 distrib_df = generate_dsitribution_df(og_df)
